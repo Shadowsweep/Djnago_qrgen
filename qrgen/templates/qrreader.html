@@ -1,0 +1,126 @@
+{% comment %} <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <script src="https://cdn.rawgit.com/LazarSoft/jsqrcode/master/grid.js"></script>
+    <!-- Include other qrcode-reader library scripts as before -->
+
+    <script>
+        import qrcode from 'qrcode';
+        function generateLink() {
+            var input = document.getElementById('qrImageInput');
+            var resultDiv = document.getElementById('result');
+
+            if (input.files.length > 0) {
+                var file = input.files[0];
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    var img = new Image();
+                    img.src = e.target.result;
+
+                    img.onload = function () {
+                        var canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        var ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+
+                        try {
+                            const result = qrcode.decode(canvas.toDataURL());
+                            resultDiv.innerHTML = 'QR Code link: <a href="' + result + '" target="_blank">' + result + '</a>';
+                            alert("1")
+                        } catch (error) {
+                            resultDiv.innerHTML = 'Error decoding QR code: ' + error;
+                        }
+                    };
+                };
+
+                reader.readAsDataURL(file);
+            } else {
+                resultDiv.innerHTML = 'Please select a QR code image.';
+            }
+        }
+    </script>
+</head>
+<body>
+    <div>
+        <input type="file" id="qrImageInput" accept="image/*" />
+        <button onclick="generateLink()">Generate Link</button>
+    </div>
+    <div id="result"></div>
+</body>
+</html> {% endcomment %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+    <style>
+        #webcam-container {
+            width: 300px;
+            height: 300px;
+            border: 1px solid #ccc;
+        }
+
+        #qr-code-result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="webcam-container"></div>
+    <div id="qr-code-result"></div>
+
+    {% comment %} <script src="/static/js/qrcode-scanner.js"></script> {% endcomment %}
+</body>
+</html>
+
+<script>
+    const webcamContainer = document.getElementById('webcam-container');
+const qrCodeResultDiv = document.getElementById('qr-code-result');
+
+// Create a webcam stream and attach it to the webcam container
+navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.srcObject = stream;
+    video.style.width = webcamContainer.offsetWidth + 'px';
+    video.style.height = webcamContainer.offsetHeight + 'px';
+    webcamContainer.appendChild(video);
+
+    // Start processing the webcam stream for QR codes
+    setInterval(function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = canvas.toDataURL('image/png');
+
+        // Send the webcam image to the Django view for QR code decoding
+        fetch('/process_webcam_stream', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: imageData })
+        }).then(function (response) {
+            response.json().then(function (data) {
+                if (data.qr_code_data) {
+                    qrCodeResultDiv.textContent = 'QR Code Link: ' + data.qr_code_data;
+                } else if (data.error) {
+                    qrCodeResultDiv.textContent = data.error;
+                }
+            });
+        });
+    }, 100);
+});
+
+</script>

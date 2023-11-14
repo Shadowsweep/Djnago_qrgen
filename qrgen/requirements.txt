@@ -1,0 +1,12 @@
+dj_database_url==2.1.0
+Django==4.1.6
+qrcode==7.4.2
+pypng==0.20220715.0
+PyQRCode==1.2.1
+djangorestframework==3.14.0
+PyMySQL==1.0.2
+psycopg2==2.9.7
+gunicorn==21.2.0
+asgiref==3.7.2
+secure-smtplib==0.1.1
+sqlparse==0.4.4
